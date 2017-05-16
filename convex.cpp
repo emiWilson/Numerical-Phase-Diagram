@@ -221,25 +221,6 @@ bool pointAboveHull(gridPoint point, vector<triangle> hull) {
     return true;
 }
 
-
-void removePointsAboveHull(vector<gridPoint> &points, vector<triangle> hull) {
-    for(int i = 0; i < points.size(); i++) {
-        for(int j = 0; j < hull.size(); j++) {
-            if(!pointAbovePlane(points[i], hull[j])) {
-                goto skipremove;
-            }
-        }
-        
-        //remove point by swapping with the last and popping
-        points[i] = points.back();
-        points.pop_back();
-        i--;
-        
-        skipremove:
-        continue;
-    }
-}
-
 //removes the found triangles from the hull
 vector<triangle> extractVisibleTriangles(gridPoint p, vector<triangle> &hull) {
     using namespace std::placeholders;
@@ -255,19 +236,7 @@ vector<edge> getEdgesOfTriangles(vector<triangle> group) {
         addTriEdges(allEdges, group[i]);
     }
     sort(allEdges.begin(), allEdges.end(), sortEdges);
-    /*
-    for(int i = 1; i < allEdges.size(); i++) {
-        if(allEdges[i] == allEdges[i - 1]) {
-            //remove both:
-            allEdges[i - 1] == allEdges[allEdges.size() - 2];
-            allEdges[i]     == allEdges[allEdges.size() - 1];
-            allEdges.pop_back();
-            allEdges.pop_back();
-        }
-    }
     
-    return allEdges;
-    */
     vector<edge> edgesOut;
     int i = 0;
     while(i + 1 < allEdges.size()) { //in case size() is zero (it's unsigned)
@@ -300,7 +269,7 @@ void iterate(vector<gridPoint> &points, vector<triangle> &hull) {
         return;
     }
     
-    //otherwise we must extend the hull:
+    //otherwise we must extend the hull to include the point:
     
     //find and remove all visible triangles in the hull
     vector<triangle> visibleTriangles = extractVisibleTriangles(thePoint, hull);
@@ -318,9 +287,6 @@ void iterate(vector<gridPoint> &points, vector<triangle> &hull) {
             hull.push_back(newTri);
         }
     }
-    
-    //remove all points above the hull
-    //removePointsAboveHull(points, hull);
 }
 
 vector<triangle> getInitialHull(vector<gridPoint> &points, gridPoint topLeft, gridPoint topRight, gridPoint bottomLeft, gridPoint bottomRight) {
@@ -351,18 +317,14 @@ vector<triangle> getInitialHull(vector<gridPoint> &points, gridPoint topLeft, gr
     if(!isDegenerate2d(tri3)){ hull.push_back(tri3); };
     if(!isDegenerate2d(tri4)){ hull.push_back(tri4); };
     
-    removePointsAboveHull(points, hull);
-    
     return hull;
 }
 
 vector<triangle> generateConvexHull(vector<gridPoint> points, gridPoint topLeft, gridPoint topRight, gridPoint bottomLeft, gridPoint bottomRight) {
     vector<triangle> hull = getInitialHull(points, topLeft, topRight, bottomLeft, bottomRight);
     
-    int iter = 0;
     while(points.size() > 0) {
-        cout << "iteration " << iter++ << " points " << points.size() << "\n";
-        //check_convex(hull);
+        cout << "points remaining " << points.size() << "\n";
         iterate(points, hull);
     }
     
@@ -462,47 +424,6 @@ void test_getEdgesOfTriangles() {
     }
 }
 
-void test_removePointsAboveHull() {
-    cout << "test_removePointsAboveHull\n";
-    int SIZE = 15;
-    vector<gridPoint> initPoints;
-    for(int i = 0; i < SIZE; i++) {
-        for(int j = 0; j < SIZE; j++) {
-            for(int k = 0; k < SIZE; k++) {
-                if(k != (SIZE - 1) - i - j) {
-                    initPoints.push_back(gridPoint(i, j, k));
-                }
-            }
-        }
-    }
-    
-    int numStartPoints = initPoints.size();
-    
-    vector<triangle> hull;
-    hull.push_back(triangle(gridPoint(SIZE - 1, 0, 0), gridPoint(0, SIZE - 1, 0), gridPoint(0, 0, SIZE - 1)));
-    
-    removePointsAboveHull(initPoints, hull);
-    
-    int expectedPoints = 0;
-    for(int i = 1; i <= SIZE - 1; i++) {
-        expectedPoints += i * (i + 1) / 2;
-    }
-    
-    if(initPoints.size() != expectedPoints) {
-        cout << "Unexpected " << initPoints.size() << " expected " << expectedPoints << " points\n";
-    }
-    
-    
-    for(int i = 0; i < initPoints.size(); i++) {
-        gridPoint p = initPoints[i];
-        if(p.z > (SIZE - 1) - p.y - p.x) {
-            cout << "(" << p.x << "," << p.y << "," << p.z << ")";
-            cout << "UNEXPECTED " << printPoint((point)p);
-            cout << "\n";
-        }
-    }
-}
-
 void test_isDegenerate2d() {
     cout << "test_isDegenerate2d\n";
     for(int i = 0; i < 100; i++) {
@@ -522,32 +443,6 @@ void test_isDegenerate2d() {
         }
     }
 }
-
-void test() {
-    int WIDTH = 3;
-    int HEIGHT = 3;
-    vector<gridPoint> points;
-    for(int i = 0; i < WIDTH; i++) {
-        for(int j = 0; j < HEIGHT; j++) {
-            double z = i+j + i * i + (double)(j * j) * .5;
-            points.push_back(gridPoint(i, j, z));
-        }
-    }
-    
-    
-    
-    cout << printPoint(points[0]) << printPoint(points[WIDTH - 1]) << printPoint(points[WIDTH * (HEIGHT - 1)]) << printPoint(points[WIDTH * HEIGHT - 1]);
-    vector<triangle> hull = generateConvexHull(points, points[0], points[WIDTH - 1], points[WIDTH * (HEIGHT - 1)], points[WIDTH * HEIGHT - 1]);
-    
-    
-    cout << "hull size " << hull.size() << ": ";
-    for(int i = 0; i < hull.size(); i++) {
-        cout << printTri(hull[i]);
-    }
-    cout << "\n";
-    
-}
-
 
 vector<string> readFile(string filename) {
     vector <string> data;
@@ -576,8 +471,6 @@ vector<string> readFile(string filename) {
     
     return data;
 }
-
-//void writeOnHullData(bool*
 
 vector<double> convertStringData(vector<string> dataIn) {
     vector<double> dataOut;
@@ -627,7 +520,6 @@ void run(vector<string> args) {
     }
     
     check_convex(hull);
-    //cout << printTri(hull[0]) << "\n";
 }
 
 int main(int argc, char *argv[]) {
@@ -640,12 +532,8 @@ int main(int argc, char *argv[]) {
     }
 
     test_isDegenerate2d();        
-    test_removePointsAboveHull();
     test_getEdgesOfTriangles();
     test_addTriEdges();
     
     run(args);
-    
-    //test();
-    
 }
