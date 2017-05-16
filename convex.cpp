@@ -21,7 +21,6 @@ public:
     point(double x, double y, double z) : x(x), y(y), z(z) {};
 };
 
-
 class gridPoint {
 public:
     int x, y;
@@ -31,17 +30,12 @@ public:
     bool operator ==(gridPoint p) {return x == p.x && y == p.y && z == p.z;};
 };
 
-
 class edge {
 public:
     gridPoint p1, p2;
     edge(gridPoint p1, gridPoint p2) : p1(p1), p2(p2) {};
     
 };
-
-
-
-
 
 class triangle {
 public:
@@ -145,6 +139,7 @@ point subtract(point p1, point p2) {
     return point(p1.x - p2.x, p1.y - p2.y, p1.z - p2.z);
 }
 
+//is the 2d projection of the triangle onto the xy plane degenerate (a line or point)?
 bool isDegenerate2d(triangle tri) {
     gridPoint v1 = subtract(tri.p2, tri.p1);
     gridPoint v2 = subtract(tri.p3, tri.p1);
@@ -189,9 +184,6 @@ void check_convex(vector<triangle> hull) {
     }
 }
 
-
-
-
 bool triangleNotVisible(gridPoint p, triangle tri) {
     point normal = planeNormalUp(tri);
     point vectorToPlane = subtract(tri.p1, p);
@@ -213,6 +205,7 @@ void check_visible(gridPoint p, vector<triangle> visible, vector<triangle> notVi
 }
 
 bool pointAboveHull(gridPoint point, vector<triangle> hull) {
+    //assuming the hull is convex, if the point is below any plane it is below the hull:
     for(int i = 0; i < hull.size(); i++) {
         if(!pointAbovePlane(point, hull[i])) {
             return false;
@@ -223,32 +216,47 @@ bool pointAboveHull(gridPoint point, vector<triangle> hull) {
 
 //removes the found triangles from the hull
 vector<triangle> extractVisibleTriangles(gridPoint p, vector<triangle> &hull) {
-    using namespace std::placeholders;
-    vector<triangle>::iterator bound = partition (hull.begin(), hull.end(), bind(triangleNotVisible,p,_1));
-    vector<triangle> visible(bound, hull.end()); //visible are at the end of the partition
-    hull.erase(bound, hull.end()); //remove visible
+    //partition the list so that the visible are at the end and the not visible are at the beginning
+    //(it's computationally cheaper to remove from the end of the list):
+    vector<triangle>::iterator bound = partition (hull.begin(), hull.end(), bind(triangleNotVisible,p,std::placeholders::_1));
+    //copy out visible to be returned:
+    vector<triangle> visible(bound, hull.end()); 
+    //remove visible from the hull:
+    hull.erase(bound, hull.end()); 
+    
     return visible;
 }
 
 vector<edge> getEdgesOfTriangles(vector<triangle> group) {
+    //We only want the edges forming the boundray of the triangle group.
+    //All interior edges will show up twice, so if we take all edges and 
+    //remove the duplicates we will be left with the boundary. To find 
+    //the duplicates we sort the list of edges so that equal edges will 
+    //be next to each other in the list.
+    
+    //find all the edges in the group:
     vector<edge> allEdges;
     for(int i = 0; i < group.size(); i++) {
         addTriEdges(allEdges, group[i]);
     }
+    
+    //sort them
     sort(allEdges.begin(), allEdges.end(), sortEdges);
     
+    //copy out non-duplicates:
     vector<edge> edgesOut;
     int i = 0;
     while(i + 1 < allEdges.size()) { //in case size() is zero (it's unsigned)
-        if(allEdges[i] == allEdges[i + 1]) {
+        if(allEdges[i] == allEdges[i + 1]) {  //it's a duplicate
             i += 2;
-        } else {
-            edgesOut.push_back(allEdges[i]);
+        } else { //it's not a duplicate, copy it out:
+            edgesOut.push_back(allEdges[i]); 
             i++;
         }
     }
     
-    if(i == allEdges.size() - 1) {
+    //if there's still one entry left, it isn't a duplicate:
+    if(i + 1 == allEdges.size()) { 
         edgesOut.push_back(allEdges[i]);
     }
     
@@ -260,36 +268,37 @@ void iterate(vector<gridPoint> &points, vector<triangle> &hull) {
     //select a point at random
     int pointToRemoveIndex = rand() % points.size();
     gridPoint thePoint = points[pointToRemoveIndex];
+    
     //remove it from points:
     points[pointToRemoveIndex] = points.back();
     points.pop_back();
     
-    //if it's above the hull, do nothing
     if(pointAboveHull(thePoint, hull)) {
+        //if it's above the hull, do nothing
         return;
-    }
+    } else {
+        //otherwise we must extend the hull to include the point:
     
-    //otherwise we must extend the hull to include the point:
+        //find and remove all triangles in the hull visible to the point
+        vector<triangle> visibleTriangles = extractVisibleTriangles(thePoint, hull);
     
-    //find and remove all visible triangles in the hull
-    vector<triangle> visibleTriangles = extractVisibleTriangles(thePoint, hull);
+        //find the edges of the visible triangles
+        vector<edge> edges = getEdgesOfTriangles(visibleTriangles);
     
-    check_visible(thePoint, visibleTriangles, hull);
-    
-    //find the edges of the visible triangles
-    vector<edge> edges = getEdgesOfTriangles(visibleTriangles);
-    
-    //add new triangles from the point to the edges
-    for(auto edge = edges.begin(); edge != edges.end(); ++edge) {
-        triangle newTri(thePoint, *edge);
-        //remove denerate (vertically oriented) triangles:
-        if(!isDegenerate2d(newTri)) {
-            hull.push_back(newTri);
+        //add new triangles from the point to the edges
+        for(auto edge = edges.begin(); edge != edges.end(); ++edge) {
+            triangle newTri(thePoint, *edge);
+            //remove denerate (vertically oriented) triangles:
+            if(!isDegenerate2d(newTri)) {
+                hull.push_back(newTri);
+            }
         }
     }
 }
 
 vector<triangle> getInitialHull(vector<gridPoint> &points, gridPoint topLeft, gridPoint topRight, gridPoint bottomLeft, gridPoint bottomRight) {
+    //we take the four corners plus the minimum point in the set to generate the initial convex hull:
+    
     gridPoint minPoint = points[0];
     for(int i = 0; i < points.size(); i++) {
         if(points[i].z < minPoint.z) {
@@ -312,6 +321,7 @@ vector<triangle> getInitialHull(vector<gridPoint> &points, gridPoint topLeft, gr
     triangle tri4 = triangle(bottomLeft, topLeft, minPoint);
     
     vector<triangle> hull;
+    //remove denerate (vertically oriented) triangles:
     if(!isDegenerate2d(tri1)){ hull.push_back(tri1); };
     if(!isDegenerate2d(tri2)){ hull.push_back(tri2); };
     if(!isDegenerate2d(tri3)){ hull.push_back(tri3); };
