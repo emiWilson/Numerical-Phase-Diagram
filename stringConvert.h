@@ -14,7 +14,7 @@ bool startsWith(const std::string str, const std::string compare) {
 
 std::string trim(const std::string& str, const std::string& whitespace = " \t")
 {
-    const int strBegin = str.find_first_not_of(whitespace);
+    const unsigned int strBegin = str.find_first_not_of(whitespace);
     if (strBegin == std::string::npos)
         return ""; // no content
 
