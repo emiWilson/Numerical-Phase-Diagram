@@ -15,6 +15,7 @@
 
 using namespace std;
 
+////Classes for geometry/////
 
 class point {
 public:
@@ -46,7 +47,7 @@ public:
 };
 
 
-
+////Required for sorting edges/////
 
 //Implement so that edges can be sorted/tested for equality. We want edges to be considered equal regardless of the order
 //the endpoints are specified, hence getSortedXY, which orders the endpoints into a tuple. z-values are ignored. 
@@ -81,17 +82,12 @@ bool operator==(const edge &lhs, const edge &rhs) {
     return (!sortEdges(lhs, rhs)) && (!sortEdges(rhs, lhs));
 }
 
-//get a triangle's edges
-void addTriEdges(vector<edge> &edges, triangle tri) {
-    edges.push_back(edge(tri.p1, tri.p2));
-    edges.push_back(edge(tri.p2, tri.p3));
-    edges.push_back(edge(tri.p3, tri.p1));
-}
 
 
 
 
 
+////Printing/////
 
 string printPoint(point p) {
     return "(" + to_string(p.x) + "," + to_string(p.y) + "," + to_string(p.z) + ")";
@@ -128,20 +124,11 @@ string printPath(vector<gridPoint> path) {
     return result;
 }
 
-/*
-void printTris(vector<triangle> tris) {
-    cout << "Size " << tris.size() << ":\n";
-    for(int i = 0; i < tris.size(); i++) {
-        cout << "  " << printTri(tris[i]) << ",\n";
-    }
-}
-*/
 
 
 
 
-
-
+/////Basic geometry/////
 
 double dotProduct(point v1, point v2) {
     return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
@@ -162,6 +149,9 @@ gridPoint subtract(gridPoint p1, gridPoint p2) {
 point subtract(point p1, point p2) {
     return point(p1.x - p2.x, p1.y - p2.y, p1.z - p2.z);
 }
+
+
+/////Geometry predicates/////
 
 //is the 2d projection of the triangle onto the xy plane degenerate (a line or point)?
 bool isDegenerate2d(triangle tri) {
@@ -194,38 +184,11 @@ bool pointAbovePlane(gridPoint p, triangle plane) {
     return dot >= 0;
 }
 
-void check_convex(vector<triangle> hull) {
-    for(unsigned int i = 0; i < hull.size(); i++) {
-        triangle tri = hull[i];
-        for(unsigned int j = 0; j < hull.size(); j++) {
-            if(j != i) {
-                if(!pointAbovePlane(hull[j].p1, tri) || !pointAbovePlane(hull[j].p2, tri) || !pointAbovePlane(hull[j].p3, tri)) {
-                    cout << "not convex!\n";
-                    return;
-                }   
-            }
-        }
-    }
-}
-
 bool triangleNotVisible(gridPoint p, triangle tri) {
     point normal = planeNormalUp(tri);
     point vectorToPlane = subtract(tri.p1, p);
     double dot = dotProduct(normal, vectorToPlane);
     return dot <= 0;
-}
-
-void check_visible(gridPoint p, vector<triangle> visible, vector<triangle> notVisible) {
-    for(auto v = visible.begin(); v != visible.end(); v++) {
-        if(triangleNotVisible(p, *v)) {
-            cout << "'visible' triangle is not visible\n";
-        }
-    }
-    for(auto nv = notVisible.begin(); nv != notVisible.end(); nv++) {
-        if(!triangleNotVisible(p, *nv)) {
-            cout << "'not visible' triangle is visible\n";
-        }
-    }
 }
 
 bool pointAboveHull(gridPoint point, vector<triangle> hull) {
@@ -237,6 +200,11 @@ bool pointAboveHull(gridPoint point, vector<triangle> hull) {
     }
     return true;
 }
+
+
+
+
+/////Algorithm implementation/////
 
 //removes the found triangles from the hull
 vector<triangle> extractVisibleTriangles(gridPoint p, vector<triangle> &hull) {
@@ -278,44 +246,21 @@ vector<edge> removeDuplicateEdges(vector<edge> edges) {
     return edgesOut;
 }
 
-/*
-vector<edge> getDuplicateEdges(vector<edge> edges) {
-    //To find the duplicates we sort the list of edges so that 
-    //equal edges will be next to each other in the list.
-        
-    //sort them
-    sort(edges.begin(), edges.end(), sortEdges);
-    
-    //copy out non-duplicates:
-    vector<edge> edgesOut;
-    int i = 0;
-    while(i + 1 < edges.size()) { //in case size() is zero (it's unsigned)
-        if(edges[i] == edges[i + 1]) {  //it's a duplicate
-            edgesOut.push_back(edges[i]); 
-            i += 2;
-        } else { //it's not a duplicate, copy it out:
-            i++;
-        }
-    }
-    
-    return edgesOut;
-}
-*/
-
 vector<edge> getEdgesOfTriangles(vector<triangle> group) {
     //We only want the edges forming the boundray of the triangle group.
     //All interior edges will show up twice, so if we take all edges and 
     //remove the duplicates we will be left with the boundary. 
     
     //find all the edges in the group:
-    vector<edge> allEdges;
+    vector<edge> edges;
     for(auto tri = group.begin(); tri != group.end(); tri++) {
-        addTriEdges(allEdges, *tri);
+        edges.push_back(edge((*tri).p1, (*tri).p2));
+        edges.push_back(edge((*tri).p2, (*tri).p3));
+        edges.push_back(edge((*tri).p3, (*tri).p1));
     }
     
-    return removeDuplicateEdges(allEdges);
+    return removeDuplicateEdges(edges);
 }
-
 
 void iterate(vector<gridPoint> &points, vector<triangle> &hull) {
     //select a point at random
@@ -400,17 +345,22 @@ vector<triangle> generateConvexHullFromData(int width, int height, vector<double
     for(int j = 0; j < height; j++) {
         for(int i = 0; i < width; i++) {
             points.push_back(gridPoint(i, j, data[dataIndex]));
-            cout << data[dataIndex] << ",";
+            //cout << data[dataIndex] << ",";
             dataIndex++;
         }
     }
-    cout << "\n";
-    cout << printPoint((point)points[0]) << printPoint((point)points[width - 1]) << printPoint((point)points[width * (height - 1)]) << printPoint((point)points[width * height - 1]) << "\n";
+    //cout << "\n";
+    //cout << printPoint((point)points[0]) << printPoint((point)points[width - 1]) << printPoint((point)points[width * (height - 1)]) << printPoint((point)points[width * height - 1]) << "\n";
     
     vector<triangle> hull = generateConvexHull(points, points[0], points[width - 1], points[width * (height - 1)], points[width * height - 1]);
     
     return hull;
 }
+
+
+
+
+/////Using the convex hull to get output data/////
 
 void setIsOnHull(bool* isOnHull, int width, int height, vector<triangle> hull) {
     for(int i = 0; i < width * height; i++) {
@@ -453,21 +403,6 @@ vector<triangle> getLargeTriangles(vector<triangle> tris) {
         if(twiceArea2d != 1) {
             outTris.push_back(tri);
         }
-        /*
-        gridPoint u = subtract(tri.p3, tri.p1);
-        gridPoint v = subtract(tri.p2, tri.p1);
-        gridPoint w = subtract(tri.p3, tri.p2);
-        
-        //if two or more edges have a length of greater than one, it's a big tri:
-        int num = 0;
-        if(dotProduct2d(u, u) > 1) { num++; }
-        if(dotProduct2d(v, v) > 1) { num++; }
-        if(dotProduct2d(w, w) > 1) { num++; }
-        if(num >= 2) {
-            outTris.push_back(tri);
-        }
-        */
-        
     }
     return outTris;
 }
@@ -591,168 +526,9 @@ vector<vector<gridPoint>> connectEdges(vector<edge> edges) {
     return vector<vector<gridPoint>>(paths.begin(), paths.end());
 }
 
-void test_connectEdges() {
-    vector<edge> edges;
-
-    /*
-    edges.push_back(edge(gridPoint(1,2,3.0), gridPoint(1,3,3.0)));
-    edges.push_back(edge(gridPoint(7,6,3.0), gridPoint(1,3,3.0)));
-
-    edges.push_back(edge(gridPoint(5,6,3.0), gridPoint(2,9,3.0)));
-    edges.push_back(edge(gridPoint(7,9,3.0), gridPoint(5,6,3.0)));
-
-    edges.push_back(edge(gridPoint(7,3,3.0), gridPoint(8,3,3.0)));
-    edges.push_back(edge(gridPoint(7,3,3.0), gridPoint(2,6,3.0)));
 
 
-    edges.push_back(edge(gridPoint(3,8,3.0), gridPoint(7,7,3.0)));
-    edges.push_back(edge(gridPoint(7,7,3.0), gridPoint(7,9,3.0)));
-
-
-    edges.push_back(edge(gridPoint(1,1,3.0), gridPoint(5,5,3.0)));
-    edges.push_back(edge(gridPoint(5,5,3.0), gridPoint(4,3,3.0)));
-    edges.push_back(edge(gridPoint(4,3,3.0), gridPoint(1,1,3.0)));
-    */
-    
-    edges.push_back(edge(gridPoint(23,22,0.0), gridPoint(24,22,0.0)));
-    edges.push_back(edge(gridPoint(24,22,0.0), gridPoint(25,22,0.0)));
-    edges.push_back(edge(gridPoint(25,21,0.0), gridPoint(25,22,0.0)));
-    edges.push_back(edge(gridPoint(25,21,0.0), gridPoint(26,21,0.0)));
-    edges.push_back(edge(gridPoint(26,21,0.0), gridPoint(27,21,0.0)));
-    
-    /*
-    {{23, 22}, {24, 22}}, 
-    {{24, 22}, {25, 22}}, 
-    {{25, 21}, {25, 22}},
-    {{25, 21}, {26, 21}},
-    {{26, 21}, {27, 21}}
-    */
-    auto paths = connectEdges(edges);
-    
-    for(unsigned int i = 0; i < paths.size(); i++) {
-        cout << "{";
-        for(unsigned int j = 0; j < paths[i].size(); j++) {
-            cout << printPointNoZ(paths[i][j]);
-        }
-        cout << "}\n";
-    }
-    
-}
-void test_addTriEdges() {
-    cout << "test_addTriEdges\n";
-    
-    gridPoint a(0,0,1), b(0,1,2), c(1,0,3), d(1,1,4);
-    triangle tri1(a,b,c);
-    triangle tri2(b,c,d);
-    
-    vector<edge> edges;
-    addTriEdges(edges, tri1);
-    
-    if(edges.size() != 3) {
-        cout << "Unexpected " << edges.size() << "\n";
-    }
-    
-    addTriEdges(edges, tri2);
-    if(edges.size() != 6) {
-        cout << "Unexpected " << edges.size() << "\n";
-        for(auto edge = edges.begin(); edge != edges.end(); ++edge) {
-            cout << printEdge(*edge);
-        }
-    }
-    
-}
-
-void test_getEdgesOfTriangles() {
-    cout << "test_getEdgesOfTriangles\n";
-    gridPoint a(0,0,1), b(0,1,2), c(1,0,3), d(1,1,4), e(2,0,5);
-    vector<triangle> tris1, tris2, tris3, tris4, tris5;
-    tris1.push_back(triangle(a,b,c));
-    tris1.push_back(triangle(b,c,d));
-    
-    //different ordering of shared edge:
-    tris2.push_back(triangle(a,b,c));
-    tris2.push_back(triangle(c,b,d));
-
-    tris3.push_back(triangle(a,b,c));
-    
-    //tris4 is empty
-    
-    tris5.push_back(triangle(a,b,c));
-    tris5.push_back(triangle(c,b,d));
-    tris5.push_back(triangle(b,d,e));
-    
-    auto edges1 = getEdgesOfTriangles(tris1);
-    auto edges2 = getEdgesOfTriangles(tris2);
-    auto edges3 = getEdgesOfTriangles(tris3);
-    auto edges4 = getEdgesOfTriangles(tris4);
-    auto edges5 = getEdgesOfTriangles(tris5);
-    
-    if(edges1.size() != 4 || edges2.size() != 4 || edges3.size() != 3 || edges4.size() != 0 || edges5.size() != 5) {
-        cout << edges1.size() << "\n";
-        cout << edges2.size() << "\n";
-        cout << edges3.size() << "\n";
-        cout << edges4.size() << "\n";
-        cout << edges5.size() << "\n";
-        cout << "Unexpected number of edges\n";
-    }
-}
-
-void test_isDegenerate2d() {
-    cout << "test_isDegenerate2d\n";
-    for(int i = 0; i < 100; i++) {
-        int rx = rand() % 5;
-        int ry = rand() % 5;
-        int a = rand() % 5;
-        int b = rand() % 5;
-        int c = rand() % 5;
-        gridPoint p1(a * rx, a * ry, rand()%100);
-        gridPoint p2(b * rx, b * ry, rand()%100);
-        gridPoint p3(c * rx, c * ry, rand()%100);
-        triangle tri = triangle(p1, p2, p3);
-        if(!isDegenerate2d(tri)) {
-            cout << "test " << i;
-            cout << " Unexpected: " << printTri(tri);
-            cout << "\n";
-        }
-    }
-}
-
-vector<string> readFile(string filename) {
-    vector <string> data;
-    ifstream infile( filename.c_str() );
-
-    while (infile)
-    {
-        string line;
-        if (!getline( infile, line )) 
-            break;
-
-        istringstream ss( line );
-
-        while (ss)
-        {
-            string s;
-            if (!getline( ss, s, ',' )) 
-                break;
-            data.push_back( s );
-        }
-    }
-    
-    if (!infile.eof()) {
-        cerr << "??\n";
-    }
-    
-    return data;
-}
-
-vector<double> convertStringData(vector<string> dataIn) {
-    vector<double> dataOut;
-    for(auto datum = dataIn.begin(); datum != dataIn.end(); datum++) {
-        double dataNum = string_convert<double>(trim(*datum));
-        dataOut.push_back(dataNum);
-    }
-    return dataOut;
-}
+/////writing out data for the hull/////
 
 void writeOnHull(string filename, vector<triangle> hull, int width, int height) {
     ofstream outfile( filename.c_str(), ofstream::out );
@@ -779,30 +555,6 @@ void writeTris(string filename, vector<triangle> tris) {
     for(auto tri = tris.begin(); tri < tris.end(); tri++) {
         outfile << "  " << printTri(*tri) << ",\n";
     }
-}
-
-void writeHullEdges(string filename, vector<triangle> hull, int width, int height) {
-    auto largeTris = getLargeTriangles(hull);
-    auto edges = removeAreaEdges(getEdgesOfTriangles(largeTris), width, height);
-    auto paths = connectEdges(edges);
-    
-    ofstream outfile( filename.c_str(), ofstream::out );
-
-    for(unsigned int i = 0; i < paths.size(); i++) {
-        outfile << "{";
-        for(unsigned int j = 0; j < paths[i].size(); j++) {
-            outfile << printPointNoZ(paths[i][j]);
-            if(j + 1 < paths[i].size()) {
-                outfile << ",";
-            }
-        }
-        outfile << "}";
-        if(i + 1 < paths.size()) {
-            outfile << ",";
-        }
-        outfile << "\n";
-    }
-    
 }
 
 void writeCoexistLines(string filename, vector<triangle> hull, int width, int height, double xMin, double yMin, double xStep, double yStep) {
@@ -870,8 +622,144 @@ void writeOnHullEdges(string filename, vector<triangle> hull, int width, int hei
         }
         outfile << "\n";
     }
-    cout << "print finished\n";
+}
+
+
+
+/////tests/////
+
+void test_connectEdges() {
+    vector<edge> edges;
+
+    edges.push_back(edge(gridPoint(1,2,3.0), gridPoint(1,3,3.0)));
+    edges.push_back(edge(gridPoint(7,6,3.0), gridPoint(1,3,3.0)));
+
+    edges.push_back(edge(gridPoint(5,6,3.0), gridPoint(2,9,3.0)));
+    edges.push_back(edge(gridPoint(7,9,3.0), gridPoint(5,6,3.0)));
+
+    edges.push_back(edge(gridPoint(7,3,3.0), gridPoint(8,3,3.0)));
+    edges.push_back(edge(gridPoint(7,3,3.0), gridPoint(2,6,3.0)));
+
+
+    edges.push_back(edge(gridPoint(3,8,3.0), gridPoint(7,7,3.0)));
+    edges.push_back(edge(gridPoint(7,7,3.0), gridPoint(7,9,3.0)));
+
+
+    edges.push_back(edge(gridPoint(1,1,3.0), gridPoint(5,5,3.0)));
+    edges.push_back(edge(gridPoint(5,5,3.0), gridPoint(4,3,3.0)));
+    edges.push_back(edge(gridPoint(4,3,3.0), gridPoint(1,1,3.0)));
     
+    edges.push_back(edge(gridPoint(23,22,0.0), gridPoint(24,22,0.0)));
+    edges.push_back(edge(gridPoint(24,22,0.0), gridPoint(25,22,0.0)));
+    edges.push_back(edge(gridPoint(25,21,0.0), gridPoint(25,22,0.0)));
+    edges.push_back(edge(gridPoint(25,21,0.0), gridPoint(26,21,0.0)));
+    edges.push_back(edge(gridPoint(26,21,0.0), gridPoint(27,21,0.0)));
+    
+    auto paths = connectEdges(edges);
+    
+    for(unsigned int i = 0; i < paths.size(); i++) {
+        cout << "{";
+        for(unsigned int j = 0; j < paths[i].size(); j++) {
+            cout << printPointNoZ(paths[i][j]);
+        }
+        cout << "}\n";
+    }
+    
+}
+
+void test_getEdgesOfTriangles() {
+    cout << "test_getEdgesOfTriangles\n";
+    gridPoint a(0,0,1), b(0,1,2), c(1,0,3), d(1,1,4), e(2,0,5);
+    vector<triangle> tris1, tris2, tris3, tris4, tris5;
+    tris1.push_back(triangle(a,b,c));
+    tris1.push_back(triangle(b,c,d));
+    
+    //different ordering of shared edge:
+    tris2.push_back(triangle(a,b,c));
+    tris2.push_back(triangle(c,b,d));
+
+    tris3.push_back(triangle(a,b,c));
+    
+    //tris4 is empty
+    
+    tris5.push_back(triangle(a,b,c));
+    tris5.push_back(triangle(c,b,d));
+    tris5.push_back(triangle(b,d,e));
+    
+    auto edges1 = getEdgesOfTriangles(tris1);
+    auto edges2 = getEdgesOfTriangles(tris2);
+    auto edges3 = getEdgesOfTriangles(tris3);
+    auto edges4 = getEdgesOfTriangles(tris4);
+    auto edges5 = getEdgesOfTriangles(tris5);
+    
+    if(edges1.size() != 4 || edges2.size() != 4 || edges3.size() != 3 || edges4.size() != 0 || edges5.size() != 5) {
+        cout << edges1.size() << "\n";
+        cout << edges2.size() << "\n";
+        cout << edges3.size() << "\n";
+        cout << edges4.size() << "\n";
+        cout << edges5.size() << "\n";
+        cout << "Unexpected number of edges\n";
+    }
+}
+
+void test_isDegenerate2d() {
+    cout << "test_isDegenerate2d\n";
+    for(int i = 0; i < 100; i++) {
+        int rx = rand() % 5;
+        int ry = rand() % 5;
+        int a = rand() % 5;
+        int b = rand() % 5;
+        int c = rand() % 5;
+        gridPoint p1(a * rx, a * ry, rand()%100);
+        gridPoint p2(b * rx, b * ry, rand()%100);
+        gridPoint p3(c * rx, c * ry, rand()%100);
+        triangle tri = triangle(p1, p2, p3);
+        if(!isDegenerate2d(tri)) {
+            cout << "test " << i;
+            cout << " Unexpected: " << printTri(tri);
+            cout << "\n";
+        }
+    }
+}
+
+
+
+/////input/////
+vector<string> readFile(string filename) {
+    vector <string> data;
+    ifstream infile( filename.c_str() );
+
+    while (infile)
+    {
+        string line;
+        if (!getline( infile, line )) 
+            break;
+
+        istringstream ss( line );
+
+        while (ss)
+        {
+            string s;
+            if (!getline( ss, s, ',' )) 
+                break;
+            data.push_back( s );
+        }
+    }
+    
+    if (!infile.eof()) {
+        cerr << "??\n";
+    }
+    
+    return data;
+}
+
+vector<double> convertStringData(vector<string> dataIn) {
+    vector<double> dataOut;
+    for(auto datum = dataIn.begin(); datum != dataIn.end(); datum++) {
+        double dataNum = string_convert<double>(trim(*datum));
+        dataOut.push_back(dataNum);
+    }
+    return dataOut;
 }
 
 
@@ -907,8 +795,6 @@ void run(vector<string> args) {
     
     writeOnHull(outPrefix + "_on_hull.txt", hull, width, height);
     
-    //writeHullEdges(outPrefix + "_coexist_region.txt", hull, width, height);
-    
     writeOnHullEdges(outPrefix + "_coexist_region.txt", hull, width, height, xmin, ymin, xstep, ystep);
     
     writeCoexistLines(outPrefix + "_coexist_lines.txt", hull, width, height, xmin, ymin, xstep, ystep);
@@ -923,10 +809,8 @@ int main(int argc, char *argv[]) {
         args.assign(argv + 1, argv + argc);
     }
 
-    test_isDegenerate2d();        
-    test_getEdgesOfTriangles();
-    test_addTriEdges();
-    test_connectEdges();
+    //test_isDegenerate2d();        
+    //test_getEdgesOfTriangles();
     
     run(args);
 }
