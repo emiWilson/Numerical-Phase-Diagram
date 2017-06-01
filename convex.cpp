@@ -35,7 +35,26 @@ public:
 class edge {
 public:
     gridPoint p1, p2;
-    edge(gridPoint p1, gridPoint p2) : p1(p1), p2(p2) {};
+    tuple<int,int,int,int> sortedXY;
+    edge(gridPoint p1, gridPoint p2) : p1(p1), p2(p2) {
+        //Implement so that edges can be sorted/tested for equality. We want edges to be considered equal regardless of the order
+        //the endpoints are specified, hence getSortedXY, which orders the endpoints into a tuple. z-values are ignored. 
+        
+        //Sort endpoints into a tuple
+        tuple<int,int> t1(p1.x, p1.y), t2(p2.x, p2.y);
+    
+        //sort the tuples by which is "lower"
+        tuple<int,int> tLower, tUpper;
+        if(t1 > t2) {
+            tLower = t2;
+            tUpper = t1;
+        } else {
+            tLower = t1;
+            tUpper = t2;            
+        }
+    
+        sortedXY = tuple<int,int,int,int>(get<0>(tLower), get<1>(tLower), get<0>(tUpper), get<1>(tUpper));
+    };
     
 };
 
@@ -49,37 +68,14 @@ public:
 
 ////Required for sorting edges/////
 
-//Implement so that edges can be sorted/tested for equality. We want edges to be considered equal regardless of the order
-//the endpoints are specified, hence getSortedXY, which orders the endpoints into a tuple. z-values are ignored. 
-
-//Sort endpoints into a tuple
-tuple<int,int,int,int> getEdgeSortedXY(edge e) {
-    tuple<int,int> t1(e.p1.x, e.p1.y), t2(e.p2.x, e.p2.y);
-    
-    //sort the tuples by which is "lower"
-    tuple<int,int> tLower, tUpper;
-    if(t1 > t2) {
-        tLower = t2;
-        tUpper = t1;
-    } else {
-        tLower = t1;
-        tUpper = t2;            
-    }
-    
-    return tuple<int,int,int,int>(get<0>(tLower), get<1>(tLower), get<0>(tUpper), get<1>(tUpper));
-}
-
 //For use with std::sort. Equivalent edges will be sorted next to each other
 bool sortEdges (edge lhs, edge rhs) {
-    auto leftTuple  = getEdgeSortedXY(lhs);
-    auto rightTuple = getEdgeSortedXY(rhs);
-    
-    return leftTuple < rightTuple;
+    return lhs.sortedXY < rhs.sortedXY;//leftTuple < rightTuple;
 }
 
 //Equality check
 bool operator==(const edge &lhs, const edge &rhs) {
-    return (!sortEdges(lhs, rhs)) && (!sortEdges(rhs, lhs));
+    return lhs.sortedXY == rhs.sortedXY;
 }
 
 
@@ -342,18 +338,26 @@ vector<triangle> generateConvexHull(vector<gridPoint> points, gridPoint topLeft,
 vector<triangle> generateConvexHullFromData(int width, int height, vector<double> data) {
     vector<gridPoint> points;
     int dataIndex = 0;
+    /*
+    //row major order:
     for(int j = 0; j < height; j++) {
         for(int i = 0; i < width; i++) {
             points.push_back(gridPoint(i, j, data[dataIndex]));
-            //cout << data[dataIndex] << ",";
             dataIndex++;
         }
     }
-    //cout << "\n";
-    //cout << printPoint((point)points[0]) << printPoint((point)points[width - 1]) << printPoint((point)points[width * (height - 1)]) << printPoint((point)points[width * height - 1]) << "\n";
     
     vector<triangle> hull = generateConvexHull(points, points[0], points[width - 1], points[width * (height - 1)], points[width * height - 1]);
+    */
+    //column major order
+    for(int i = 0; i < width; i++) {
+        for(int j = 0; j < height; j++) {
+            points.push_back(gridPoint(i, j, data[dataIndex]));
+            dataIndex++;
+        }
+    }
     
+    vector<triangle> hull = generateConvexHull(points, points[0], points[height - 1], points[height * (width - 1)], points[width * height - 1]);
     return hull;
 }
 
