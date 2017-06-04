@@ -6,14 +6,13 @@
 #include <functional>
 #include <vector>
 #include <set>
-#include "stringConvert.h"
 #include <stdlib.h>
 #include <time.h>
 #include <tuple>
 #include <deque>
 
-
 using namespace std;
+
 
 ////Classes for geometry/////
 
@@ -338,17 +337,7 @@ vector<triangle> generateConvexHull(vector<gridPoint> points, gridPoint topLeft,
 vector<triangle> generateConvexHullFromData(int width, int height, vector<double> data) {
     vector<gridPoint> points;
     int dataIndex = 0;
-    /*
-    //row major order:
-    for(int j = 0; j < height; j++) {
-        for(int i = 0; i < width; i++) {
-            points.push_back(gridPoint(i, j, data[dataIndex]));
-            dataIndex++;
-        }
-    }
     
-    vector<triangle> hull = generateConvexHull(points, points[0], points[width - 1], points[width * (height - 1)], points[width * height - 1]);
-    */
     //column major order
     for(int i = 0; i < width; i++) {
         for(int j = 0; j < height; j++) {
@@ -366,6 +355,8 @@ vector<triangle> generateConvexHullFromData(int width, int height, vector<double
 
 /////Using the convex hull to get output data/////
 
+//Sets the boolean array isOnHull to true or false for each point.
+//A point is on the hull if it is the endpoint of one of the hull triangles.
 void setIsOnHull(bool* isOnHull, int width, int height, vector<triangle> hull) {
     for(int i = 0; i < width * height; i++) {
         isOnHull[i] = false;
@@ -379,6 +370,7 @@ void setIsOnHull(bool* isOnHull, int width, int height, vector<triangle> hull) {
     }
 }
 
+//Determines if a point is on the edge of the domain
 bool notOnEdge(gridPoint p, int width, int height) {
     if(p.x == 0 || p.y == 0 || p.x == width - 1 || p.y == height - 1) {
         return false;
@@ -387,6 +379,7 @@ bool notOnEdge(gridPoint p, int width, int height) {
     }
 }
 
+//Removes edges that lie entirely on the edge of the domain
 vector<edge> removeAreaEdges(vector<edge> edges, int width, int height) {
     vector<edge> edgesOut;
     for(auto e = edges.begin(); e != edges.end(); e++) {
@@ -397,6 +390,9 @@ vector<edge> removeAreaEdges(vector<edge> edges, int width, int height) {
     return edgesOut;
 }
 
+//"large" triangles are those of area greater than 1/2. The convex areas of the input
+//values will be tiled by "small" triangles of area 1/2. Thus the "large" triangles
+//outline the areas of coexistence.
 vector<triangle> getLargeTriangles(vector<triangle> tris) {
     vector<triangle> outTris;
     for(auto t = tris.begin(); t != tris.end(); t++) {
@@ -411,6 +407,9 @@ vector<triangle> getLargeTriangles(vector<triangle> tris) {
     return outTris;
 }
 
+//Coexistence lines are determined by assuming the triangles are relatively long. 
+//We take the shortest edge and find its midpoint, and then return an edge from that 
+//midpoint to the point opposite the short side.
 tuple<double, double, double, double> getCoexistLine(triangle tri) {
     //vectors for each edge:
     gridPoint u = subtract(tri.p3, tri.p1);
@@ -424,27 +423,25 @@ tuple<double, double, double, double> getCoexistLine(triangle tri) {
     
     //find the edge:
     if(uu <= vv && uu <= ww) { //u is the short edge
-        //point av((tri.p3.x + tri.p1.x) / 2.0, (tri.p3.y + tri.p1.y) / 2.0, (tri.p3.z + tri.p1.z) / 2.0);
-        //return edge(av, tri.p2);
         return tuple<double, double, double, double>((tri.p3.x + tri.p1.x) / 2.0, (tri.p3.y + tri.p1.y) / 2.0, tri.p2.x, tri.p2.y);
     }
     if(vv <= uu && vv <= ww) { //v is the short edge
-        //point av((tri.p2.x + tri.p1.x) / 2.0, (tri.p2.y + tri.p1.y) / 2.0, (tri.p2.z + tri.p1.z) / 2.0);
-        //return edge(av, tri.p3);
         return tuple<double, double, double, double>((tri.p2.x + tri.p1.x) / 2.0, (tri.p2.y + tri.p1.y) / 2.0, tri.p3.x, tri.p3.y);
     }
     if(ww <= uu && ww <= vv) { //w is the short edge
-        //point av((tri.p3.x + tri.p2.x) / 2.0, (tri.p3.y + tri.p2.y) / 2.0, (tri.p3.z + tri.p2.z) / 2.0);
-        //return edge(av, tri.p1);
         return tuple<double, double, double, double>((tri.p3.x + tri.p2.x) / 2.0, (tri.p3.y + tri.p2.y) / 2.0, tri.p1.x, tri.p1.y);
     }
     
+    //should never get here
     throw "No shortest edge";
 }
 
+//Connects a set of edges into paths. Paths are sequences of points, an edge is a path of length 2.
+//Sequences of edges sharing common endpoints are converted into equivalent paths.
 vector<vector<gridPoint>> connectEdges(vector<edge> edges) {
     deque<vector<gridPoint>> paths;
     
+    //Push all edges into the list of paths:
     for(auto e = edges.begin(); e != edges.end(); e++) {
         vector<gridPoint> path;
         path.push_back((*e).p1);
@@ -452,15 +449,21 @@ vector<vector<gridPoint>> connectEdges(vector<edge> edges) {
         paths.push_back(path);
     }
     
+    //It will take at most this many iterations to connect all paths:
     int iterations = paths.size();
     
     while(iterations >= 0) {
         iterations--;
-
+        
+        //We take the first path, then search for any paths that connect to it at the front or back.
+        //If we find one we merge the paths into one.
+        //The resulting path (whether or not it was merged with another one) is pushed to the back of
+        //the queue.
+        
         vector<gridPoint> path = paths[0];
         paths.pop_front();
         
-        
+        //search for connections and merge:
         for(int i = 0; i < (int)(paths.size()); i++) {
             gridPoint first = path[0];
             gridPoint last  = path.back();
@@ -468,7 +471,6 @@ vector<vector<gridPoint>> connectEdges(vector<edge> edges) {
             //front to back
             if(paths[i][0] == last) {
                 auto foundPath = paths[i];
-                //cout << "ftb " << printPath(foundPath) << " to " << printPath(path) << "\n";
                 
                 //copy found path to end of path
                 path.insert(path.end(), foundPath.begin() + 1, foundPath.end());
@@ -481,7 +483,6 @@ vector<vector<gridPoint>> connectEdges(vector<edge> edges) {
             //back to front
             if(paths[i].back() == first) {
                 auto foundPath = paths[i];
-                //cout << "btf " << printPath(foundPath) << " to " << printPath(path) << "\n";
                 
                 //copy path to end of found path:
                 foundPath.insert(foundPath.end(), path.begin() + 1, path.end());
@@ -496,7 +497,6 @@ vector<vector<gridPoint>> connectEdges(vector<edge> edges) {
             //front to front
             if(paths[i][0] == first) {
                 auto foundPath = paths[i];
-                //cout << "ftf " << printPath(foundPath) << " to " << printPath(path) << "\n";
 
                 //reverse the path:
                 reverse(path.begin(), path.end());
@@ -511,7 +511,6 @@ vector<vector<gridPoint>> connectEdges(vector<edge> edges) {
             //back to back
             if(paths[i].back() == last) {
                 auto foundPath = paths[i];
-                //cout << "btb " << printPath(foundPath) << " to " << printPath(path) << "\n";
                 
                 //reverse the found path:
                 reverse(foundPath.begin(), foundPath.end());
@@ -534,6 +533,8 @@ vector<vector<gridPoint>> connectEdges(vector<edge> edges) {
 
 /////writing out data for the hull/////
 
+//Writes out a grid of 1s and 0s indicating which points in the input were on the resulting
+//convect hull. (On hull is "1", not on hull is "0").
 void writeOnHull(string filename, vector<triangle> hull, int width, int height) {
     ofstream outfile( filename.c_str(), ofstream::out );
     
@@ -552,16 +553,25 @@ void writeOnHull(string filename, vector<triangle> hull, int width, int height) 
     
 }
 
-void writeTris(string filename, vector<triangle> tris) {
+//Outputs all triangles.
+void writeTris(string filename, vector<triangle> tris, double xMin, double yMin, double xStep, double yStep) {
     ofstream outfile( filename.c_str(), ofstream::out );
     
-    outfile << "Size " << tris.size() << ":\n";
-    for(auto tri = tris.begin(); tri < tris.end(); tri++) {
-        outfile << "  " << printTri(*tri) << ",\n";
+    for(unsigned int i = 0; i < tris.size(); i++) {
+        auto tri = tris[i];
+        outfile << "{{"  << tri.p1.x * xStep + xMin << "," << tri.p1.y * yStep + yMin 
+                << "},{" << tri.p2.x * xStep + xMin << "," << tri.p2.y * yStep + yMin 
+                << "},{" << tri.p3.x * xStep + xMin << "," << tri.p3.y * yStep + yMin << "}}";
+        
+        if(i + 1 < tris.size()) {
+            outfile << ",\n";
+        }
+        
     }
 }
 
-void writeCoexistLines(string filename, vector<triangle> hull, int width, int height, double xMin, double yMin, double xStep, double yStep) {
+//Outputs the coexisting lines (as determined by getCoexistLine) of the given convex hull.
+void writeCoexistLines(string filename, vector<triangle> hull, double xMin, double yMin, double xStep, double yStep) {
     auto largeTris = getLargeTriangles(hull);
     
     vector<tuple<double, double, double, double>> edges;
@@ -585,15 +595,19 @@ void writeCoexistLines(string filename, vector<triangle> hull, int width, int he
     
 }
 
-void writeOnHullEdges(string filename, vector<triangle> hull, int width, int height, double xMin, double yMin, double xStep, double yStep) {
+//Writes the paths outlining the coexistence region
+void writeCoexistOutline(string filename, vector<triangle> hull, int width, int height, double xMin, double yMin, double xStep, double yStep) {
     ofstream outfile( filename.c_str(), ofstream::out );
     
+    
+    //Use setIsOnHull to find the areas of coexistence
     bool onHull[width * height];
     
     setIsOnHull(onHull, width, height, hull);
     
     vector<edge> edges;
     
+    //For each point not on the hull, add the four edges corresponding to a square surrounding that point:
     int idx = 0;
     for(int j = 0; j < height; j++) {
         for(int i = 0; i < width; i++) {
@@ -608,7 +622,10 @@ void writeOnHullEdges(string filename, vector<triangle> hull, int width, int hei
         }
     }
     
+    //Remove all duplicate edges and edges on the perimeter of the domain, then connect them into paths:
     auto paths = connectEdges(removeAreaEdges(removeDuplicateEdges(edges), width, height));
+    
+    //Print the paths:
     for(unsigned int i = 0; i < paths.size(); i++) {
         outfile << "{";
         for(unsigned int j = 0; j < paths[i].size(); j++) {
@@ -757,6 +774,27 @@ vector<string> readFile(string filename) {
     return data;
 }
 
+std::string trim(const std::string& str, const std::string& whitespace = " \t")
+{
+    const unsigned int strBegin = str.find_first_not_of(whitespace);
+    if (strBegin == std::string::npos)
+        return ""; // no content
+
+    const int strEnd = str.find_last_not_of(whitespace);
+    const int strRange = strEnd - strBegin + 1;
+
+    return str.substr(strBegin, strRange);
+}
+
+template <class T> T string_convert(const std::string& s) {
+	std::istringstream i(s);
+	T x;
+	if (!(i >> x)) {
+		//return NAN;
+	}
+   return x;
+}
+
 vector<double> convertStringData(vector<string> dataIn) {
     vector<double> dataOut;
     for(auto datum = dataIn.begin(); datum != dataIn.end(); datum++) {
@@ -768,6 +806,8 @@ vector<double> convertStringData(vector<string> dataIn) {
 
 
 void run(vector<string> args) {
+    
+    //Check that the user had provided the correct number of arguments:
     int numArgs = args.size();
     
     if(numArgs != 8) {
@@ -775,6 +815,7 @@ void run(vector<string> args) {
         return;
     }
     
+    //Convert input arguments:
     unsigned int width  = string_convert<unsigned int>(trim(args[0]));
     unsigned int height = string_convert<unsigned int>(trim(args[1]));
     string inputFileName = args[2];
@@ -784,24 +825,29 @@ void run(vector<string> args) {
     double xstep = string_convert<double>(trim(args[6]));
     double ystep = string_convert<double>(trim(args[7]));
     
+    //Get the input data in string format:
     vector<string> stringData = readFile(inputFileName);
     
+    //Check that the data size matches the expected size from the width and height:
     if(stringData.size() != width * height) {
         cout << "Data size (" << stringData.size() << ") doesn't match expected size (" << width << " * " << height << ")\n";
         return;
     }
     
+    //Convert the string data into doubles:
     vector<double> data = convertStringData(stringData);
     
+    //Generate the convex hull:
     auto hull = generateConvexHullFromData(width, height, data);
     
-    writeTris(outPrefix + "_hull_tris.txt", hull);
+    //Output data:
+    writeTris(outPrefix + "_hull_tris.txt", hull, xmin, ymin, xstep, ystep);
     
     writeOnHull(outPrefix + "_on_hull.txt", hull, width, height);
     
-    writeOnHullEdges(outPrefix + "_coexist_region.txt", hull, width, height, xmin, ymin, xstep, ystep);
+    writeCoexistOutline(outPrefix + "_coexist_region.txt", hull, width, height, xmin, ymin, xstep, ystep);
     
-    writeCoexistLines(outPrefix + "_coexist_lines.txt", hull, width, height, xmin, ymin, xstep, ystep);
+    writeCoexistLines(outPrefix + "_coexist_lines.txt", hull, xmin, ymin, xstep, ystep);
 }
 
 int main(int argc, char *argv[]) {
@@ -813,8 +859,5 @@ int main(int argc, char *argv[]) {
         args.assign(argv + 1, argv + argc);
     }
 
-    //test_isDegenerate2d();        
-    //test_getEdgesOfTriangles();
-    
     run(args);
 }
