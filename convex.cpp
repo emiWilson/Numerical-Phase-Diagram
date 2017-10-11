@@ -559,9 +559,9 @@ void writeTris(string filename, vector<triangle> tris, double xMin, double yMin,
     
     for(unsigned int i = 0; i < tris.size(); i++) {
         auto tri = tris[i];
-        outfile << "{{"  << tri.p1.x * xStep + xMin << "," << tri.p1.y * yStep + yMin 
-                << "},{" << tri.p2.x * xStep + xMin << "," << tri.p2.y * yStep + yMin 
-                << "},{" << tri.p3.x * xStep + xMin << "," << tri.p3.y * yStep + yMin << "}}";
+        outfile << "{{"  << tri.p1.x * xStep + xMin << "," << tri.p1.y * yStep + yMin << "," << tri.p1.z
+                << "},{" << tri.p2.x * xStep + xMin << "," << tri.p2.y * yStep + yMin << "," << tri.p2.z
+                << "},{" << tri.p3.x * xStep + xMin << "," << tri.p3.y * yStep + yMin << "," << tri.p3.z << "}}";
         
         if(i + 1 < tris.size()) {
             outfile << ",\n";
