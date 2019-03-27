@@ -1,3 +1,5 @@
-in/*
-out/*
+*.
+.DS_Store
+*/out/
+*/in/
 run
