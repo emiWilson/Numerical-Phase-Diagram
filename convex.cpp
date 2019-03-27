@@ -327,7 +327,7 @@ vector<triangle> generateConvexHull(vector<gridPoint> points, gridPoint topLeft,
     vector<triangle> hull = getInitialHull(points, topLeft, topRight, bottomLeft, bottomRight);
     
     while(points.size() > 0) {
-        cout << "points remaining " << points.size() << "\n";
+        //cout << "points remaining " << points.size() << "\n";
         iterate(points, hull);
     }
     

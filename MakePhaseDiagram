@@ -1,0 +1,1 @@
+julia GetFree.jl; //Can't access the functions. How can you make this smarter? Maybe run Julia GetFree.jl then do the convex hull C++ stuff, then run plotting? And save plots with timestamp. Worth a try. 

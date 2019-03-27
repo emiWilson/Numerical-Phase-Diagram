@@ -22,17 +22,42 @@ using Optim
 using DelimitedFiles
 
 #Parameters
-const b = 0.5
-const a1 = 7
-const a2(dB) = 5.45#0.4958 + 11.6438*dB + 1.8*dB^2
-const a3(dB) = -2#-0.220867 - 4.09696*dB + 1.8*dB^2
-const a4 = 0.1
-const Bx = 3.5
-const ko = 2*(2*pi)/sqrt(3) #ko = 2*q/sqrt(3) and q = 2*pi
+
+ko = 2*(2*pi)/sqrt(3) #ko = 2*q/sqrt(3) and q = 2*pi
+
+
+function getNum(str)
+        str = split(str, "=")[1]
+        str = split(str, " ")[1]#just incase there was a space before the =
+        return parse(Float64, str)
+end
+
+function readParams()
+        f = open("Params.txt")
+        lines = readlines(f)
+
+        global T_start = getNum(lines[2])
+        global T_end = getNum(lines[3])
+        global T_step = getNum(lines[4])
+
+
+        global no_start = getNum(lines[7])
+        global no_end = getNum(lines[8])
+        global no_step = getNum(lines[9])
+
+
+        global b = getNum(lines[12])
+        global a1 = getNum(lines[13])
+        global a2 = getNum(lines[14])#will get slightly more complicated when want a function, but should actually be ok
+        global a3 = getNum(lines[15])
+        global a4 = getNum(lines[16])
+        global Bx = getNum(lines[17])
+
+end
 
 
 
-function make_text_file()
+function make_free()
         F_id(no, phi, dB) = dB*(no+1)*log((no+1)*(1-b)/(1-(no+1)*b))-a1*no^2
         F_corr(no, phi, dB) = -dB*Bx*no^2*exp(-(1/2)*ko^2)/(2*exp(dB))-
             3*dB*Bx*no*phi*exp(-2/3)*exp(2*sqrt(3)*ko*(1/3))*exp(-(1/2)*ko^2)/(4*exp(dB))-
@@ -40,8 +65,8 @@ function make_text_file()
             9*dB*Bx*phi^2*exp(-2/3)*exp(2*sqrt(3)*ko*(1/3))*exp(-(1/2)*ko^2)/(8*exp(dB))
         F_multi(no, phi, dB) = (2/sqrt(3))*
                 (9*phi^2*sqrt(3)*no^2*a4/32 + 3*phi^3*sqrt(3)*a4*no/32 +
-                45*phi^4*sqrt(3)*a4/1024 + 2*phi^2*sqrt(3)*a3(dB)*no/16 +
-                phi^3*sqrt(3)*3/32 + 3*phi^2*sqrt(3)*a2(dB)/32)
+                45*phi^4*sqrt(3)*a4/1024 + 2*phi^2*sqrt(3)*a3*no/16 +
+                phi^3*sqrt(3)*3/32 + 3*phi^2*sqrt(3)*a2 /32)
 
         F(no, phi, dB) = F_id(no, phi, dB) + F_corr(no, phi,dB) + F_multi(no, phi, dB)
 
@@ -54,11 +79,6 @@ function make_text_file()
                 sol = optimize(phi -> F(no, phi, dB), 0.0, 10.0)
                 return sol.minimum
         end
-
-        no_range = -0.9999:0.001:1
-        dB_range = 1:0.01:4
-        F_arr = Array{Float64}(undef, length(dB_range), length(no_range))
-
 
         let db_index = 1
                 for db in dB_range
@@ -82,5 +102,23 @@ function make_text_file()
                 writedlm(str, data, ',')
         end
 
-        print("Made free energy text files")
 end
+
+function main()
+        readParams()
+
+        global no_range = no_start:no_step:no_end
+        global dB_range = T_start:T_step:T_end
+        println("\n---------------INPUT PARAMETERS---------------")
+        println("Tempertature field is : ", T_start, " to ", T_end, " with ",
+                length(dB_range), " points with spacing of ", T_step)
+        println("Density field is : ", no_start, " to ", no_end, " with ",
+                length(no_range), " points with spaceing of ", no_step)
+        println("b = ", b, "\na1 = ", a1, "\na2 = ", a2, "\na3 = ", a3,
+                "\na4 = ", a4,"\nBx = ", Bx)
+        println("----------------------------------------------\n")
+        global F_arr = Array{Float64}(undef, length(dB_range), length(no_range))
+        make_free()
+end
+
+main()
