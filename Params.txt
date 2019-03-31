@@ -1,17 +1,21 @@
 //Temperature Field
 1 = start
 4 = end
-0.01 = stepsize
+0.1 = stepsize
 ----------------
 //Density Field
 -0.9999 = start
 1 = end
-0.01 = stepsize
+0.001 = stepsize
 --------------
 //Params
 0.5 = b
 7 = a1
-5.45 = a2
--1 = a3
+5 = a2
+-2 = a3
 0.1 = a4
 3.5 = Bx
+
+
+#-2.26082 + 2.41018T + 0.06T^2 = a2 #of form: a + bT + cT^2 for file to be correctly read
+#0.689182 + -1.08982T + 0.06T^2 = a3

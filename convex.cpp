@@ -830,6 +830,7 @@ void run(vector<string> args) {
     
     //Check that the data size matches the expected size from the width and height:
     if(stringData.size() != width * height) {
+        cout << "Error in file " << inputFileName << "\n"; 
         cout << "Data size (" << stringData.size() << ") doesn't match expected size (" << width << " * " << height << ")\n";
         return;
     }
