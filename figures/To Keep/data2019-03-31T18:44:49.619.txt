@@ -1,0 +1,11 @@
+Tempertature field is : 2.3 to 4.5 with 37 points with spacing of 0.06
+Density field is : -0.9999 to 1.0 with 2000 points with spacing of 0.001
+b = 0.5
+a1 = 7.0
+a2 = 5.45
+a3 = -2.0
+a4 = 0.1
+Bx = 3.5
+
+Add 1.02 to density and divide by 2, divide temp by 3.3.
+Non - expanded ideal term. 
