@@ -150,8 +150,8 @@ function conv_hull()
                         end
                 end
 
-                n1[a] = parse(Float64, data[1]) + 0.25
-                n2[a] = parse(Float64, data[3]) + 0.25
+                n1[a] = parse(Float64, data[1]) + 1
+                n2[a] = parse(Float64, data[3]) + 1
                 close(f)
         end
 
@@ -174,7 +174,7 @@ function conv_hull()
                         1.35, 1.35, 1.35, 1.35,
                         2.75,2.75]
 
-        scatter(density, temp/3.3)
+        scatter(density/2, temp/3.3)
         scatter!(pre_density, pre_temperature)
         date = Dates.now()
         savefig("figures/fig$date.png")
