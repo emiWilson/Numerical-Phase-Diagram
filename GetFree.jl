@@ -26,10 +26,9 @@ function getFcn(str)
         #get rid of the T's
         num1 = str[1]
         num2 = split(str[3], "T")[1]
-        num3 = split(str[3], "T")[1]
+        num3 = split(str[5], "T")[1]
 
         num1 = parse(Float64, num1)
-
         num2 = parse(Float64, num2)
         num3 = parse(Float64, num3)
         return num1, num2, num3
@@ -163,13 +162,17 @@ function conv_hull()
         #"Pertubation weighted-density approximation: The phase diagram
         #        of a Lennard-Jones system"
         # - L.Mederos, G. Navasues, P. Tarazona and E. Chacon
-        pre_density = [0.906, 1.004,
-                        0.946, 1.040,
-                        0.966, 1.055]
+        pre_density = [0.906, 1.004, 0, 0.855,
+                        0.025, 0.855, 0.9133, 1.0142,
+                        0.946, 1.040, 0.0598, 0.729,
+                        0.966, 1.055, 0.1433,0.5087,
+                        1.0583, 1.162]
 
-        pre_temperature = [0.75, 0.75,
-                        1.15, 1.15,
-                        1.35, 1.35]
+        pre_temperature = [0.75, 0.75,0.75, 0.75,
+                        1,1,1,1,
+                        1.15, 1.15, 1.15, 1.15,
+                        1.35, 1.35, 1.35, 1.35,
+                        2.75,2.75]
 
         scatter(density, temp/3.3)
         scatter!(pre_density, pre_temperature)
