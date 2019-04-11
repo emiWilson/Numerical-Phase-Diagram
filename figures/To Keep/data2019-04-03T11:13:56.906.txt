@@ -1,0 +1,11 @@
+Tempertature field is : 2.3 to 4.0 with 35 points with spacing of 0.05
+Density field is : -0.99 to 1.0 with 3981 points with spacing of 0.0005
+b = 0.5
+a1 = 7.0
+a2 = -2.26082 + 2.41018T  +  0.06T^2
+a3 = 0.689182 + -1.08982T  +  0.06T^2
+a4 = 0.1
+Bx = 3.5
+
+
+Order 15 Taylor expansion on ideal term about no = 0.05

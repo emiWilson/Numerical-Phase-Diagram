@@ -1,0 +1,11 @@
+Tempertature field is : 2.3 to 4.5 with 45 points with spacing of 0.05
+Density field is : -0.99 to 1.0 with 399 points with spacing of 0.005
+b = 0.51
+a1 = 7.0
+a2 = 5.45 + 0.0T  +  0.0T^2
+a3 = -2.0 + 0.0T  +  0.0T^2
+a4 = 0.1
+Bx = 3.5
+Taylor expand ideal part about n0 = 0.05 to order 10
+ T0 is 2.7
+ Avg density is 0.55

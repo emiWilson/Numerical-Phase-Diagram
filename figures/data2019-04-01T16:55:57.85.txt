@@ -1,8 +1,0 @@
-Tempertature field is : 2.3 to 4.6 with 47 points with spacing of 0.05
-Density field is : -0.9999 to 1.0 with 2000 points with spacing of 0.001
-b = 0.5
-a1 = 7.0
-a2 = 5.45 + 0.001T  +  0.001T^2
-a3 = -2.0 + 0.001T  +  0.001T^2
-a4 = 0.1
-Bx = 3.5
