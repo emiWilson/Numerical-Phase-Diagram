@@ -1,12 +1,12 @@
 //Temperature Field
-2.3 = start
+2.2 = start
 4.5 = end
-0.05 = stepsize
+0.02 = stepsize
 ----------------
 //Density Field
 -0.99 = start
 1 = end
-0.05 = stepsize
+0.005 = stepsize
 --------------
 //Params
 6 = a

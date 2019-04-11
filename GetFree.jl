@@ -89,8 +89,19 @@ function GetFree(a, b) #maybe make immutable (just get rid of mutable) when you 
         length_no = length(no_range)
         #end
 
-        global data = Array{Float64}(undef, length(no_range), 2)
-        global F_arr = Array{Float64}(undef, length(dB_range), length(no_range))
+        #need to be global
+        data = Array{Float64}(undef, length(no_range), 2)
+        F_arr = Array{Float64}(undef, length(dB_range), length(no_range))
+
+        #use to write parameters either to file or to screen
+        toWrite = string("Tempertature field is : ", T_start, " to ", T_end, " with ",
+                length(dB_range), " points with spacing of ", T_step, "\n",
+                "Density field is : ", no_start, " to ", no_end, " with ",
+                length(no_range), " points with spacing of ", no_step, "\n",
+                "\na = ", a, "b = ", b, "\na2 = ", a2_printer, "\na3 = ", a3_printer,
+                "\na4 = ", a4,"\nBx = ", Bx,
+                "\nTaylor expand ideal part about n0 = ", TaylorAbout, " to order ",
+                TaylorExpOrder, "\n T0 is ", T0, "\n Avg density is ", rho_bar)
 
         function printToScreen()
                 println("\n---------------INPUT PARAMETERS---------------")
@@ -159,6 +170,7 @@ function GetFree(a, b) #maybe make immutable (just get rid of mutable) when you 
                 end
 
         end
+        #helpful in debugging, plots the free energy curve
         function plot_Free(dB)
                 Free_eng = Array{Float64}(undef, length(no_range), 1)
                 let index = 1
@@ -173,14 +185,14 @@ function GetFree(a, b) #maybe make immutable (just get rid of mutable) when you 
                 date = Dates.now()
                 savefig("FreeEng")
         end
-
+        #helpful in debugging, plots the phi curve
         function plot_Phi(dB)
                 scatter(no_range, FF_phi.(no_range, dB))
                 date = Dates.now()
                 savefig("PhivsDensityPlot")
         end
 
-
+        #takes data from Mathew Seymours C++ convex hull code and preps it to plot.
         function conv_hull()
                 n1 = Array{Float64}(undef, 1, T_numPts)
                 n2 = Array{Float64}(undef, 1, T_numPts)
@@ -236,30 +248,29 @@ function GetFree(a, b) #maybe make immutable (just get rid of mutable) when you 
                         pre_temperature[i] =pre_temperature[i]*T0
                 end
 
+                #make phase diagram plot
                 scatter(density, temp, title="a = $a, b = $b, T_o = $T0, rho_bar = $rho_bar \na2 = $a2_printer, a3 = $a3_printer", label = "Gaby", marker = 4)
                 scatter!(pre_density, pre_temperature, label = "PRE")
+
+                #get current date to give figure a unique name
                 date = Dates.now()
+
+                #save phase diagram
                 savefig("figures/fig$date.png")
 
                 #write params to file
-                toWrite = string("Tempertature field is : ", T_start, " to ", T_end, " with ",
-                        length(dB_range), " points with spacing of ", T_step, "\n",
-                        "Density field is : ", no_start, " to ", no_end, " with ",
-                        length(no_range), " points with spacing of ", no_step, "\n",
-                        "\na = ", a, "b = ", b, "\na2 = ", a2_printer, "\na3 = ", a3_printer,
-                        "\na4 = ", a4,"\nBx = ", Bx,
-                        "\nTaylor expand ideal part about n0 = ", TaylorAbout, " to order ",
-                        TaylorExpOrder, "\n T0 is ", T0, "\n Avg density is ", rho_bar)
-
                 open("figures/data$date.txt", "w") do f
                         write(f, toWrite)
                 end
 
+                #write temp/density data to file
+                open("figures/DensTempData$a.txt", "w") do f
+                        writedlm(f, [temp density], ',')
+                end;
 
         end
         function main()
-                #readDataTXT()
-                printToScreen()
+                #printToScreen()
                 make_free()
                 #run Mathew Seymours convex hull for my system (in C++)
                 for i in 1:length_dB
