@@ -1,26 +1,16 @@
 include("GetFree.jl")
 include("Fit.jl")
 
-#rho_bar = 0.55 #~average density - to convert real density to Gabiels ficticious density
-#T0 = 2.6 #temperature scaling param tao (in PFC) = T (real) / T0
 
+#-2.05 + 2.43T + 0.055T^2 = a2
+#0.65 + -1.083T + 0.058T^2 = a3
+#GetFree(a, b, a2_1, a2_2, a2_3, a3_1, a3_2, a3_3, a4, bx)
+#GetFree(6, 0.5, -2.05, 2.43, 0.055, 0.65, -1.083, 0.058, 0.1, 3.5)
+function forRange()
+    val_range = -1.8:-0.02:-3
+    for v in val_range
+        GetFree(5.25, 0.5, v, 2.43, 0.055, 0.65, -1.083, 0.058, 0.1, 3.5)
+    end
+end
 
-GetFree(5.5, 0.5)
-#=
-data = readdlm("figures/DensTempData5.5.txt", ',')
-T = data[:,1]
-D = data[:,2]
-
-
-
-fit = fitPRE()
-rho_bar = fit[2]
-T0 = fit[3]
-PRE_data = scalePRE(rho_bar, T0)
-
-#make phase diagram plot
-scatter(D, T, label = "PFC")
-scatter!(PRE_data)
-#scatter!(ChiSq[5], ChiSq[4], label = "PRE")
-#scatter!(ChiSq[3], ChiSq[2], color = "red", label = "near")
-=#
+GetFree(6, 0.5, -2.05, 2.43, 0.055, 0.65, -1.083, 0.058, 0.1, 3.5)

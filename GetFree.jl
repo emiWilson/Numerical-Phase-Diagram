@@ -13,8 +13,7 @@ include("Fit.jl")
 #OOP language, look into this, there must be a better way because from what I can tell none of the nested functions
 #are callable this way.
 
-function GetFree(a, b) #maybe make immutable (just get rid of mutable) when you have  better idea of what you are doing.
-
+function GetFree(a, b, a2_1, a2_2, a2_3, a3_1, a3_2, a3_3, a4, bx) #maybe make immutable (just get rid of mutable) when you have  better idea of what you are doing.
         #all other parameters will be read in through readParams() file
         ko = 2/sqrt(3) #radius of bragg ring
         TaylorAbout = 0.05 #taylor expansion about n = TaylorAbout
@@ -71,16 +70,16 @@ function GetFree(a, b) #maybe make immutable (just get rid of mutable) when you 
         a = getNum(lines[12])
         b = getNum(lines[13])
 =#
-        coeff_a2 = getFcn(lines[14])
+        coeff_a2 = (a2_1, a2_2, a2_3)#getFcn(lines[14])
         a2(dB) = eval(coeff_a2[1] + coeff_a2[2]*dB + coeff_a2[3]*dB^2)
         a2_printer = string(coeff_a2[1], ",", coeff_a2[2], ",", coeff_a2[3])
 
-        coeff_a3 = getFcn(lines[15])
+        coeff_a3 = (a3_1, a3_2, a3_3)#getFcn(lines[15])
         a3(dB) = eval(coeff_a3[1] + coeff_a3[2]*dB + coeff_a3[3]*dB^2)
         a3_printer = string(coeff_a3[1], ",", coeff_a3[2], ",", coeff_a3[3] )
 
-        a4 = getNum(lines[16])
-        Bx = getNum(lines[17])
+        a4 = a4#getNum(lines[16])
+        Bx = bx#getNum(lines[17])
 
 
         T_range = T_start:T_step:T_end
@@ -225,6 +224,7 @@ function GetFree(a, b) #maybe make immutable (just get rid of mutable) when you 
                         n1[a] = parse(Float64, data[1])
                         n2[a] = parse(Float64, data[3])
                         close(f)
+                        rm(filename) #now that it has been read, delete it
                 end
 
                 density = vcat(transpose(n1), transpose(n2))
@@ -234,7 +234,7 @@ function GetFree(a, b) #maybe make immutable (just get rid of mutable) when you 
                 #"Pertubation weighted-density approximation: The phase diagram
                 #        of a Lennard-Jones system"
                 # - L.Mederos, G. Navasues, P. Tarazona and E. Chacon
-                #=
+
                 pre_density = [0.906, 1.004, 0, 0.855,
                                       0.025, 0.729,
                                       0.946, 1.040, 0.0598, 0.644,
@@ -260,14 +260,14 @@ function GetFree(a, b) #maybe make immutable (just get rid of mutable) when you 
 
                 #save phase diagram
                 savefig("figures/fig$date.png")
-                =#
+
                 #write params to file
                 open("figures/data$date.txt", "w") do f
                         write(f, toWrite)
                 end
 
-                #write temp/density data to file
-                open("figures/DensTempData$a.txt", "w") do f
+                #write temp/density data to file - if wanted to use just it for plotting
+                open("figures/DensTempData$date.txt", "w") do f
                         writedlm(f, [temp density], ',')
                 end;
 
@@ -283,16 +283,18 @@ function GetFree(a, b) #maybe make immutable (just get rid of mutable) when you 
                 end
                 D, T = conv_hull()
 
-                fit = fitPRE()
+                fit = fitPRE(D, T, 0.4, 0.5, 2, 4)
+                chiSq = fit[1]
                 rho_bar = fit[2]
                 T0 = fit[3]
                 PRE_data = scalePRE(rho_bar, T0)
 
                 #make phase diagram plot
-                scatter(D, T, label = "PFC")
+                scatter(D, T, label = "PFC", title = "a = $a, b = $b, chiSq = $chiSq")
                 scatter!(PRE_data)
 
                 savefig("figures/myFit$date.txt")
+
         end
         main()
 

@@ -2,16 +2,21 @@
 function scalePRE(rho_bar_in, T0_in)
 
         pre_density = [0.906, 1.004, 0, 0.855,
-                                      0.025, 0.729,
-                                      0.946, 1.040, 0.0598, 0.644,
-                                      0.966, 1.055, 0.1433,0.5087]
-                                      #1.0583, 1.162]
+                      0.025, 0.729,
+                      0.946, 1.040, 0.0598, 0.644,
+                      0.966, 1.055, 0.1433,0.5087]
+                      #1.0583, 1.162]
 
         pre_temperature = [0.75, 0.75,0.75, 0.75,
-                              1,1,
-                              1.15, 1.15, 1.15, 1.15,
-                              1.35, 1.35, 1.35, 1.35]
-                              #2.75,2.75]
+                      1,1,
+                      1.15, 1.15, 1.15, 1.15,
+                      1.35, 1.35, 1.35, 1.35]
+                      #2.75,2.75]
+
+        pre_chiWeights = [5, 5, 0.2, 2,
+                        1, 3,
+                        5, 5, 0.2, 2,
+                        5, 5, 1, 1]
 
 
         for i in 1:length(pre_temperature)
@@ -25,7 +30,7 @@ function scalePRE(rho_bar_in, T0_in)
 end
 
 #good default input values are rho_bar = 0.55 and T0 = 2.6
-function getChiSq(rho_bar, T0)
+function getChiSq(rho_bar, T0, D, T)
         scaled = scalePRE(rho_bar, T0)
         sD = scaled[1]
         sT = scaled[2]
@@ -64,7 +69,7 @@ function getChiSq(rho_bar, T0)
 end
 
 #find chi squares for an array of rho, T values(scaling factors for the PRE paper)
-function testChi(p_start, p_step, p_end, T_start, T_step, T_end)
+function testChi(p_start, p_step, p_end, T_start, T_step, T_end, D, T)
         #rho_list = 0.45:0.1:0.55
         #T_list = 2:0.1:3
 
@@ -86,7 +91,7 @@ function testChi(p_start, p_step, p_end, T_start, T_step, T_end)
                         for j in 1:length(T_list)
                                 p = rho_list[i]
                                 t = T_list[j]
-                                ChiArr[index] = getChiSq(p,t)
+                                ChiArr[index] = getChiSq(p,t, D, T)
 
                                 pArr[index] = p
                                 tArr[index] = t
@@ -105,12 +110,12 @@ end
 
 #maybe would be good to make it recursive... but don't need insane accuracy, yet
 #maybe have some sort of convergence test too
-function fitPRE(minDen = 0.4, maxDen = 0.5, minT = 2, maxT = 4)
+function fitPRE(D, T, minDen = 0.4, maxDen = 0.5, minT = 2, maxT = 4)
         #first interation
         numSteps = 20
         DenStep = (maxDen - minDen)/numSteps
         TStep = (maxT - minT)/numSteps
-        tester1 = testChi(minDen, DenStep, maxDen, minT, TStep, maxT)
+        tester1 = testChi(minDen, DenStep, maxDen, minT, TStep, maxT, D, T)
 
         it1dens = tester1[2]
         it1temp = tester1[3]
@@ -122,6 +127,6 @@ function fitPRE(minDen = 0.4, maxDen = 0.5, minT = 2, maxT = 4)
         DenStep2 = (maxDens2 - minDens2)/numSteps
         TStep2 = (maxT2 - minT2)/numSteps
 
-        tester2 = testChi(minDens2, DenStep2, maxDens2, minT2, TStep2, maxT2)
+        tester2 = testChi(minDens2, DenStep2, maxDens2, minT2, TStep2, maxT2, D, T)
         return tester2
 end
