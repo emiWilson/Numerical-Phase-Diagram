@@ -7,11 +7,12 @@ using DelimitedFiles
 
 using Dates; import Dates;
 using TaylorSeries;
-
+include("Fit.jl")
 #used to create instances of the GetFree object to preform loop for different parameters
 #NEED to investigate if there is a propper way to do this. Some forums have reported that Julia isn't really a
 #OOP language, look into this, there must be a better way because from what I can tell none of the nested functions
 #are callable this way.
+
 function GetFree(a, b) #maybe make immutable (just get rid of mutable) when you have  better idea of what you are doing.
 
         #all other parameters will be read in through readParams() file
@@ -21,6 +22,9 @@ function GetFree(a, b) #maybe make immutable (just get rid of mutable) when you 
         rho_bar = 0.55 #~average density - to convert real density to Gabiels ficticious density
         T0 = 2.6 #temperature scaling param tao (in PFC) = T (real) / T0
         Pi = pi #different notation between maple and julia
+
+        #get current date to give figure a unique name
+        date = Dates.now()
 
         #get number from input line
         function getNum(str)
@@ -230,6 +234,7 @@ function GetFree(a, b) #maybe make immutable (just get rid of mutable) when you 
                 #"Pertubation weighted-density approximation: The phase diagram
                 #        of a Lennard-Jones system"
                 # - L.Mederos, G. Navasues, P. Tarazona and E. Chacon
+                #=
                 pre_density = [0.906, 1.004, 0, 0.855,
                                       0.025, 0.729,
                                       0.946, 1.040, 0.0598, 0.644,
@@ -252,12 +257,10 @@ function GetFree(a, b) #maybe make immutable (just get rid of mutable) when you 
                 scatter(density, temp, title="a = $a, b = $b, T_o = $T0, rho_bar = $rho_bar \na2 = $a2_printer, a3 = $a3_printer", label = "Gaby", marker = 4)
                 scatter!(pre_density, pre_temperature, label = "PRE")
 
-                #get current date to give figure a unique name
-                date = Dates.now()
 
                 #save phase diagram
                 savefig("figures/fig$date.png")
-
+                =#
                 #write params to file
                 open("figures/data$date.txt", "w") do f
                         write(f, toWrite)
@@ -268,6 +271,8 @@ function GetFree(a, b) #maybe make immutable (just get rid of mutable) when you 
                         writedlm(f, [temp density], ',')
                 end;
 
+                return density, temp
+
         end
         function main()
                 #printToScreen()
@@ -276,9 +281,19 @@ function GetFree(a, b) #maybe make immutable (just get rid of mutable) when you 
                 for i in 1:length_dB
                         run(`./run $length_no 2 in/data$i.txt out/convex$i $no_start 0 $no_step 0 `)
                 end
-                conv_hull()
-        end
+                D, T = conv_hull()
 
+                fit = fitPRE()
+                rho_bar = fit[2]
+                T0 = fit[3]
+                PRE_data = scalePRE(rho_bar, T0)
+
+                #make phase diagram plot
+                scatter(D, T, label = "PFC")
+                scatter!(PRE_data)
+
+                savefig("figures/myFit$date.txt")
+        end
         main()
 
 end
